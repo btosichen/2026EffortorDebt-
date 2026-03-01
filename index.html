@@ -94,6 +94,30 @@
                     開始挑戰！ <i class="fa-solid fa-play ml-2"></i>
                 </button>
             </div>
+
+            <!-- 排行榜區塊 -->
+            <div id="leaderboard-section" class="mt-12 bg-gray-50 rounded-2xl p-6 border-2 border-pink-100 shadow-inner max-w-lg mx-auto">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center justify-center">
+                    <i class="fa-solid fa-ranking-star text-yellow-500 mr-2"></i> 英雄榜 Top 10
+                </h3>
+                <div id="leaderboard-loading" class="text-gray-500 text-sm animate-pulse text-center my-4">排行榜資料讀取中...</div>
+                <div class="overflow-hidden hidden rounded-xl border border-gray-200 shadow-sm" id="leaderboard-table-container">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-pink-100">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-center">排名</th>
+                                <th scope="col" class="px-4 py-3">挑戰者</th>
+                                <th scope="col" class="px-4 py-3 text-center">成績</th>
+                                <th scope="col" class="px-4 py-3 text-center">速度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body" class="divide-y divide-gray-200">
+                            <!-- JS 動態填入 -->
+                        </tbody>
+                    </table>
+                </div>
+                <p id="leaderboard-error" class="text-red-400 text-xs hidden mt-4 text-center">無法載入資料，請確認試算表權限為「知道連結的使用者皆可查看」。</p>
+            </div>
         </div>
 
         <!-- ================= View 1: 快速判斷卡 (10題) ================= -->
@@ -339,7 +363,12 @@
         let questionsCompleted = 0;
         
         // 【重要】老師請在這裡替換您的 Google Apps Script 部署網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwvFKNbpBGwZWIn331uzeB1i3z9-lRNP7IGlZpFnv_rXxnU7GE8B2KV1M_DqEsl67zw5w/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwvFKNbpBGwZWIn331uzeB1i3z9-lRNP7IGlZpFnv_rXxnU7GE8B2KV1M_DqEsl67zw5w/exec
+";
+
+        // 讀取 Google Sheets 的排行榜資料 (透過 gviz)
+        const SHEET_ID = "1NFYxzAf1D6kIDBUbjPHemKJMw1q7VR4aZ2TkVq7UvqU";
+        const GVIZ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
         // ================= 工具函數 =================
         function showView(viewId) {
@@ -666,6 +695,90 @@
                 statusEl.className = "mt-6 text-sm font-bold text-orange-500";
             });
         }
+
+        // ================= 排行榜載入邏輯 =================
+        function fetchLeaderboard() {
+            fetch(GVIZ_URL)
+                .then(res => res.text())
+                .then(text => {
+                    // Google visualization 回傳的是一個 JS 函式呼叫，需把外層剝掉才能解析 JSON
+                    const jsonStr = text.substring(47, text.length - 2);
+                    const data = JSON.parse(jsonStr);
+                    
+                    let records = [];
+                    data.table.rows.forEach(row => {
+                        if (!row.c) return;
+                        
+                        // 依照原本試算表欄位對應: B(1)=班級, C(2)=座號, D(3)=姓名, E(4)=作答時間, H(7)=平衡指數
+                        let className = row.c[1]?.v || '';
+                        let number = row.c[2]?.v || '';
+                        let name = row.c[3]?.v || '';
+                        let time = row.c[4]?.v || 0;
+                        let balance = row.c[7]?.v || 0;
+                        
+                        // 嘗試轉為數字，並過濾掉標題列或無效資料
+                        time = parseFloat(time);
+                        balance = parseFloat(balance);
+
+                        if(!isNaN(time) && !isNaN(balance) && name !== '') {
+                            records.push({ className, number, name, time, balance });
+                        }
+                    });
+
+                    // 排序規則：1. 先比成績(平衡指數)由高至低  2. 成績相同時比速度(作答時間)由低至高
+                    records.sort((a, b) => {
+                        if (b.balance !== a.balance) {
+                            return b.balance - a.balance; // 降冪排列 (分數高在前)
+                        }
+                        return a.time - b.time; // 升冪排列 (秒數少在前)
+                    });
+
+                    renderLeaderboard(records.slice(0, 10)); // 擷取前 10 名
+                })
+                .catch(err => {
+                    console.error("載入排行榜失敗", err);
+                    document.getElementById('leaderboard-loading').classList.add('hidden');
+                    document.getElementById('leaderboard-error').classList.remove('hidden');
+                });
+        }
+
+        function renderLeaderboard(topRecords) {
+            const tbody = document.getElementById('leaderboard-body');
+            tbody.innerHTML = '';
+
+            if (topRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500 font-bold">目前尚無挑戰紀錄，搶先成為第一名吧！</td></tr>`;
+            } else {
+                topRecords.forEach((record, index) => {
+                    // 排名圖示設計 (前三名給獎盃/獎牌)
+                    let rankIcon = `<span class="font-bold text-gray-500">${index + 1}</span>`;
+                    if (index === 0) rankIcon = `<i class="fa-solid fa-crown text-yellow-500 text-lg drop-shadow-md"></i>`;
+                    else if (index === 1) rankIcon = `<i class="fa-solid fa-medal text-gray-400 text-lg drop-shadow-md"></i>`;
+                    else if (index === 2) rankIcon = `<i class="fa-solid fa-medal text-orange-400 text-lg drop-shadow-md"></i>`;
+
+                    // 確保座號格式美觀
+                    const padNum = String(record.number).padStart(2, '0');
+
+                    tbody.innerHTML += `
+                        <tr class="bg-white hover:bg-pink-50 transition">
+                            <td class="px-4 py-3 text-center align-middle">${rankIcon}</td>
+                            <td class="px-4 py-3 align-middle font-bold text-gray-800">
+                                <span class="text-xs text-gray-400 mr-1">${record.className}-${padNum}</span><br/>
+                                ${record.name}
+                            </td>
+                            <td class="px-4 py-3 text-center align-middle font-black text-blue-600">${record.balance}</td>
+                            <td class="px-4 py-3 text-center align-middle text-gray-500">${record.time}s</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('leaderboard-loading').classList.add('hidden');
+            document.getElementById('leaderboard-table-container').classList.remove('hidden');
+        }
+
+        // 網頁載入後即刻取得排行榜
+        window.addEventListener('DOMContentLoaded', fetchLeaderboard);
     </script>
 </body>
 </html>
