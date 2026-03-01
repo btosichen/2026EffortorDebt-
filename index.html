@@ -54,9 +54,16 @@
         .text-gradient {
             background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
+
+        /* Modal 出現動畫 */
+        @keyframes modal-fade-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal { animation: modal-fade-in 0.3s ease-out forwards; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-green-100 via-blue-50 to-purple-100 min-h-screen text-gray-800">
+<body class="bg-gradient-to-br from-green-100 via-blue-50 to-purple-100 min-h-screen text-gray-800 relative">
 
     <!-- 頂部進度條 -->
     <div id="progress-container" class="fixed top-0 left-0 w-full h-2 bg-gray-200 z-50 hidden">
@@ -69,16 +76,25 @@
         <div id="view-intro" class="bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in mt-10">
             <div class="text-6xl mb-4 text-pink-500"><i class="fa-solid fa-brain"></i></div>
             <h1 class="text-4xl font-black mb-2 text-gradient bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">Effort or Debt?</h1>
-            <h2 class="text-2xl font-bold mb-6 text-gray-700">AI腦力挑戰站 🚀</h2>
-            <p class="mb-8 text-gray-600 font-medium">在AI時代，大腦是越練越強大 (Cognitive Effort)，還是越來越懶惰 (Cognitive Debt)？完成25個挑戰，測出你的AI平衡指數！</p>
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">AI腦力挑戰站 🚀</h2>
+            <p class="mb-6 text-gray-600 font-medium">在AI時代，大腦是越練越強大 (Cognitive Effort)，還是越來越懶惰 (Cognitive Debt)？完成25個挑戰，測出你的AI平衡指數！</p>
             
-            <div class="max-w-sm mx-auto space-y-4 text-left">
+            <!-- 教學簡報按鈕 -->
+            <button onclick="openSlides()" class="mb-8 inline-flex items-center justify-center bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:-translate-y-1 hover:shadow-xl active:scale-95 text-lg">
+                <i class="fa-solid fa-person-chalkboard mr-2 text-xl"></i> 挑戰前必看：教學簡報
+            </button>
+            
+            <div class="max-w-sm mx-auto space-y-4 text-left border-t-2 border-gray-100 pt-6">
                 <div>
                     <label class="block text-sm font-bold mb-1 text-gray-700">班級</label>
                     <select id="user-class" class="w-full p-3 rounded-xl border-2 border-gray-200 focus:border-pink-400 focus:ring focus:ring-pink-200 outline-none transition">
                         <option value="">請選擇班級</option>
-                        <option value="801">801</option><option value="802">802</option><option value="803">803</option>
-                        <option value="804">804</option><option value="805">805</option><option value="806">806</option>
+                        <option value="801">801</option>
+                        <option value="802">802</option>
+                        <option value="803">803</option>
+                        <option value="804">804</option>
+                        <option value="805">805</option>
+                        <option value="806">806</option>
                     </select>
                 </div>
                 <div>
@@ -304,6 +320,20 @@
 
     </div>
 
+    <!-- ================= 教學簡報彈出視窗 (Modal) ================= -->
+    <div id="slides-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[85vh] animate-modal relative">
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 px-6 flex justify-between items-center text-white shadow-md z-10">
+                <h3 class="font-bold text-xl"><i class="fa-solid fa-book-open mr-2"></i> Effort or Debt? 教學簡報</h3>
+                <button onclick="closeSlides()" class="text-white hover:text-pink-200 transition text-3xl font-black leading-none outline-none">&times;</button>
+            </div>
+            <!-- 將 Google Drive 連結轉換為 /preview 嵌入格式 -->
+            <div class="flex-1 w-full relative bg-gray-100">
+                <iframe src="https://drive.google.com/file/d/1cW-Dd2MHVMwre1Wo8jVmUrB86-Jbn5_Q/preview" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ================= 題目資料設定 =================
         const part1Data = [
@@ -362,8 +392,7 @@
         let questionsCompleted = 0;
         
         // 【重要】老師請在這裡替換您的 Google Apps Script 部署網址
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwvFKNbpBGwZWIn331uzeB1i3z9-lRNP7IGlZpFnv_rXxnU7GE8B2KV1M_DqEsl67zw5w/exec
-";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwvFKNbpBGwZWIn331uzeB1i3z9-lRNP7IGlZpFnv_rXxnU7GE8B2KV1M_DqEsl67zw5w/exec";
 
         // 讀取 Google Sheets 的排行榜資料 (透過 gviz)
         const SHEET_ID = "1NFYxzAf1D6kIDBUbjPHemKJMw1q7VR4aZ2TkVq7UvqU";
@@ -380,6 +409,22 @@
             let percent = (questionsCompleted / totalQuestions) * 100;
             document.getElementById('progress-bar').style.width = percent + '%';
         }
+
+        // ================= 簡報 Modal 控制 =================
+        function openSlides() {
+            document.getElementById('slides-modal').classList.remove('hidden');
+        }
+        
+        function closeSlides() {
+            document.getElementById('slides-modal').classList.add('hidden');
+        }
+
+        // 點擊背景也能關閉 Modal
+        document.getElementById('slides-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSlides();
+            }
+        });
 
         // ================= 邏輯：初始化 =================
         function startGame() {
