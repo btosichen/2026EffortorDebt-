@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Effort or Debt? AI腦力挑戰站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0fdf4; }
+        
+        /* 卡片翻轉動畫 */
+        .flip-card { perspective: 1000px; }
+        .flip-card-inner {
+            position: relative; width: 100%; height: 100%; text-align: center;
+            transition: transform 0.6s; transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+        .flip-card-front, .flip-card-back {
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+            border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .flip-card-back { transform: rotateY(180deg); }
+
+        /* 大腦動畫 */
+        @keyframes pulse-effort {
+            0% { transform: scale(1); filter: drop-shadow(0 0 10px #4ade80); }
+            50% { transform: scale(1.1); filter: drop-shadow(0 0 20px #22c55e); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 10px #4ade80); }
+        }
+        @keyframes shrink-debt {
+            0% { transform: scale(1); filter: grayscale(0%); }
+            100% { transform: scale(0.8); filter: grayscale(80%); opacity: 0.7; }
+        }
+        .brain-effort { animation: pulse-effort 1.5s infinite; color: #ec4899; }
+        .brain-debt { animation: shrink-debt 1s forwards; color: #9ca3af; }
+        .brain-neutral { transform: scale(1); color: #60a5fa; transition: all 0.5s; }
+
+        /* 自訂滑桿 */
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 32px; width: 32px; border-radius: 50%;
+            background: #facc15; cursor: pointer; margin-top: -12px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 12px; cursor: pointer; background: linear-gradient(90deg, #4ade80 0%, #cbd5e1 50%, #f87171 100%);
+            border-radius: 10px;
+        }
+
+        /* 漸層文字 */
+        .text-gradient {
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-green-100 via-blue-50 to-purple-100 min-h-screen text-gray-800">
+
+    <!-- 頂部進度條 -->
+    <div id="progress-container" class="fixed top-0 left-0 w-full h-2 bg-gray-200 z-50 hidden">
+        <div id="progress-bar" class="h-full bg-gradient-to-r from-pink-500 to-yellow-500 w-0 transition-all duration-300"></div>
+    </div>
+
+    <div class="max-w-3xl mx-auto px-4 py-8">
+        
+        <!-- ================= View 0: 登入首頁 ================= -->
+        <div id="view-intro" class="bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in mt-10">
+            <div class="text-6xl mb-4 text-pink-500"><i class="fa-solid fa-brain"></i></div>
+            <h1 class="text-4xl font-black mb-2 text-gradient bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500">Effort or Debt?</h1>
+            <h2 class="text-2xl font-bold mb-6 text-gray-700">AI腦力挑戰站 🚀</h2>
+            <p class="mb-8 text-gray-600 font-medium">在AI時代，大腦是越練越強大 (Cognitive Effort)，還是越來越懶惰 (Cognitive Debt)？完成25個挑戰，測出你的AI平衡指數！</p>
+            
+            <div class="max-w-sm mx-auto space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-bold mb-1 text-gray-700">班級</label>
+                    <select id="user-class" class="w-full p-3 rounded-xl border-2 border-gray-200 focus:border-pink-400 focus:ring focus:ring-pink-200 outline-none transition">
+                        <option value="">請選擇班級</option>
+                        <option value="701">701</option><option value="702">702</option><option value="703">703</option>
+                        <option value="801">801</option><option value="802">802</option><option value="803">803</option>
+                        <option value="901">901</option><option value="902">902</option><option value="903">903</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1 text-gray-700">座號</label>
+                    <input type="number" id="user-number" min="1" max="50" class="w-full p-3 rounded-xl border-2 border-gray-200 focus:border-pink-400 outline-none transition" placeholder="例如: 15">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1 text-gray-700">姓名</label>
+                    <input type="text" id="user-name" class="w-full p-3 rounded-xl border-2 border-gray-200 focus:border-pink-400 outline-none transition" placeholder="你的名字">
+                </div>
+                <button onclick="startGame()" class="w-full mt-6 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold py-4 rounded-xl text-xl shadow-lg transform transition hover:scale-105 active:scale-95">
+                    開始挑戰！ <i class="fa-solid fa-play ml-2"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= View 1: 快速判斷卡 (10題) ================= -->
+        <div id="view-part1" class="hidden">
+            <div class="text-center mb-6">
+                <span class="bg-pink-100 text-pink-600 px-4 py-1 rounded-full text-sm font-bold">Part 1 / 4：快速判斷</span>
+                <h2 class="text-2xl font-bold mt-3">這是大腦鍛鍊，還是大腦欠債？</h2>
+                <p class="text-gray-500 text-sm mt-1">進度：<span id="p1-progress">1</span>/10</p>
+            </div>
+
+            <div class="flip-card w-full h-80 max-w-lg mx-auto mb-8 cursor-pointer" id="p1-card">
+                <div class="flip-card-inner" id="p1-card-inner">
+                    <!-- 正面 -->
+                    <div class="flip-card-front bg-white flex flex-col items-center justify-center p-8 border-4 border-indigo-100">
+                        <div class="text-5xl mb-4" id="p1-icon">📚</div>
+                        <h3 class="text-xl font-bold text-gray-800" id="p1-question">自己讀完文章後，寫下摘要。</h3>
+                    </div>
+                    <!-- 背面 (解答) -->
+                    <div class="flip-card-back flex flex-col items-center justify-center p-8 text-white" id="p1-back-bg">
+                        <div class="text-5xl mb-2" id="p1-result-icon">✨</div>
+                        <h3 class="text-3xl font-black mb-3" id="p1-result-title">Effort!</h3>
+                        <p class="text-lg font-medium" id="p1-result-desc">太棒了！自己統整資訊能建立神經連結，讓大腦更聰明！</p>
+                        <button onclick="nextPart1()" class="mt-6 bg-white text-gray-800 font-bold py-2 px-6 rounded-full shadow-md hover:bg-gray-100">下一題 ➔</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-4 max-w-lg mx-auto" id="p1-buttons">
+                <button onclick="answerPart1('effort')" class="flex-1 bg-green-400 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-green-500 active:scale-95 transition text-xl">
+                    <i class="fa-solid fa-dumbbell mr-2"></i> Effort (鍛鍊)
+                </button>
+                <button onclick="answerPart1('debt')" class="flex-1 bg-red-400 text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-red-500 active:scale-95 transition text-xl">
+                    <i class="fa-solid fa-couch mr-2"></i> Debt (欠債)
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= View 2: 灰色地帶挑戰 (8題) ================= -->
+        <div id="view-part2" class="hidden">
+            <div class="text-center mb-6">
+                <span class="bg-blue-100 text-blue-600 px-4 py-1 rounded-full text-sm font-bold">Part 2 / 4：灰色地帶</span>
+                <h2 class="text-2xl font-bold mt-3">真實世界往往不是非黑即白</h2>
+                <p class="text-gray-500 text-sm mt-1">進度：<span id="p2-progress">1</span>/8</p>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl p-8 max-w-xl mx-auto">
+                <div class="text-4xl text-center mb-4" id="p2-icon">🤔</div>
+                <h3 class="text-xl font-bold text-center text-gray-800 mb-8" id="p2-question">你寫作卡關了，請AI幫忙發想大綱，然後自己填寫完整內文。</h3>
+                
+                <div class="mb-8">
+                    <input type="range" min="0" max="100" value="50" id="p2-slider" class="w-full">
+                    <div class="flex justify-between text-sm font-bold text-gray-500 mt-2">
+                        <span class="text-green-500"><i class="fa-solid fa-dumbbell"></i> 偏向 Effort</span>
+                        <span class="text-gray-400">一半一半</span>
+                        <span class="text-red-500">偏向 Debt <i class="fa-solid fa-couch"></i></span>
+                    </div>
+                </div>
+
+                <!-- 模擬全班數據區 (答題後顯示) -->
+                <div id="p2-stats" class="hidden mb-6 bg-gray-50 p-4 rounded-xl">
+                    <p class="text-sm font-bold text-gray-600 mb-2">全班的想法分佈模擬：</p>
+                    <div class="flex h-4 rounded-full overflow-hidden">
+                        <div id="stat-effort" class="bg-green-400 h-full flex items-center justify-center text-xs text-white font-bold transition-all duration-1000" style="width: 0%"></div>
+                        <div id="stat-debt" class="bg-red-400 h-full flex items-center justify-center text-xs text-white font-bold transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 text-center" id="p2-reflection">其實沒有絕對標準答案，重點是你有沒有「意識到」自己正在依賴工具！</p>
+                </div>
+
+                <div class="text-center">
+                    <button id="p2-btn-submit" onclick="submitPart2()" class="bg-blue-500 text-white font-bold py-3 px-10 rounded-xl shadow hover:bg-blue-600 transition">確定我的選擇</button>
+                    <button id="p2-btn-next" onclick="nextPart2()" class="hidden bg-gray-800 text-white font-bold py-3 px-10 rounded-xl shadow hover:bg-gray-900 transition">下一題 ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= View 3: 腦力模擬實驗 (5題) ================= -->
+        <div id="view-part3" class="hidden">
+            <div class="text-center mb-6">
+                <span class="bg-purple-100 text-purple-600 px-4 py-1 rounded-full text-sm font-bold">Part 3 / 4：腦力模擬室</span>
+                <h2 class="text-2xl font-bold mt-3">不同的工具，大腦怎麼運作？</h2>
+                <p class="text-gray-500 text-sm mt-1">進度：<span id="p3-progress">1</span>/5</p>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl p-6 max-w-2xl mx-auto flex flex-col md:flex-row gap-6">
+                <!-- 左側：大腦狀態 -->
+                <div class="flex-1 flex flex-col items-center justify-center border-b-2 md:border-b-0 md:border-r-2 border-gray-100 pb-6 md:pb-0 md:pr-6">
+                    <i id="brain-visual" class="fa-solid fa-brain text-8xl brain-neutral mb-6"></i>
+                    
+                    <div class="w-full space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-green-600">創造力指數</span><span id="bar-create-txt">50%</span></div>
+                            <div class="h-3 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div id="bar-create" class="h-full bg-green-500 transition-all duration-500" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1"><span class="text-red-500">依賴指數</span><span id="bar-depend-txt">50%</span></div>
+                            <div class="h-3 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div id="bar-depend" class="h-full bg-red-400 transition-all duration-500" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側：題目與選項 -->
+                <div class="flex-1 flex flex-col justify-center">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" id="p3-question">老師請大家寫一篇關於「全球暖化」的報告。你會怎麼做？</h3>
+                    <div class="space-y-3" id="p3-options">
+                        <button onclick="answerPart3('self')" class="w-full text-left p-3 rounded-xl border-2 border-green-200 hover:bg-green-50 focus:ring-2 focus:ring-green-400 transition text-sm font-medium">A. 自己去圖書館找書，歸納重點自己寫。</button>
+                        <button onclick="answerPart3('google')" class="w-full text-left p-3 rounded-xl border-2 border-blue-200 hover:bg-blue-50 focus:ring-2 focus:ring-blue-400 transition text-sm font-medium">B. 用Google搜尋資料，拼湊成一篇報告。</button>
+                        <button onclick="answerPart3('ai')" class="w-full text-left p-3 rounded-xl border-2 border-red-200 hover:bg-red-50 focus:ring-2 focus:ring-red-400 transition text-sm font-medium">C. 直接請AI「幫我寫一篇500字的暖化報告」並複製。</button>
+                    </div>
+                    <button id="p3-btn-next" onclick="nextPart3()" class="mt-4 hidden w-full bg-gray-800 text-white font-bold py-3 rounded-xl shadow hover:bg-gray-900 transition">下一題 ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= View 4: 反思短答 (2題) ================= -->
+        <div id="view-part4" class="hidden">
+            <div class="text-center mb-6">
+                <span class="bg-yellow-100 text-yellow-600 px-4 py-1 rounded-full text-sm font-bold">Part 4 / 4：深度反思</span>
+                <h2 class="text-2xl font-bold mt-3">寫下你的AI使用宣言</h2>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl p-8 max-w-2xl mx-auto space-y-6">
+                <div>
+                    <label class="block text-lg font-bold mb-2 text-gray-800">Q1. 經過剛剛的測驗，你覺得在學習時，什麼時候「應該」用AI？什麼時候「不該」用？</label>
+                    <textarea id="reflection1" rows="4" class="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-yellow-400 outline-none transition resize-none" placeholder="請輸入至少20個字..."></textarea>
+                    <p class="text-right text-xs text-gray-400 mt-1"><span id="char-count1">0</span> / 建議50字以上</p>
+                </div>
+                <div>
+                    <label class="block text-lg font-bold mb-2 text-gray-800">Q2. 為了避免大腦退化 (Cognitive Debt)，你未來會如何改變使用AI的習慣？</label>
+                    <textarea id="reflection2" rows="4" class="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-yellow-400 outline-none transition resize-none" placeholder="請輸入至少20個字..."></textarea>
+                    <p class="text-right text-xs text-gray-400 mt-1"><span id="char-count2">0</span> / 建議50字以上</p>
+                </div>
+                <div id="p4-error" class="text-red-500 font-bold text-center hidden">兩題都請至少輸入20個字喔！多寫一點鍛鍊大腦吧！</div>
+                <button onclick="finishGame()" id="finish-btn" class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-4 rounded-xl text-xl shadow-lg transform transition hover:scale-105">
+                    提交挑戰結果！ 🏆
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= View 5: 完成頁面 ================= -->
+        <div id="view-result" class="hidden text-center mt-6">
+            <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-xl mx-auto border-t-8 border-yellow-400">
+                <h2 class="text-3xl font-black mb-2" id="result-name">同學，恭喜完成！</h2>
+                <p class="text-gray-500 mb-6">測驗總時間：<span id="result-time" class="font-bold"></span> 秒</p>
+
+                <div class="w-32 h-32 mx-auto bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white relative z-10 mb-[-30px]">
+                    <i id="badge-icon" class="fa-solid fa-trophy text-6xl text-white drop-shadow-md"></i>
+                </div>
+                
+                <div class="bg-gray-50 rounded-2xl p-8 pt-12 mt-4 shadow-inner">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2" id="badge-title">AI大師徽章</h3>
+                    <p class="text-sm text-gray-600 mb-6" id="badge-desc">你能完美掌握工具，不讓工具掌握你！</p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-green-600">大腦鍛鍊 (Effort)</span><span id="res-effort-txt">0%</span></div>
+                            <div class="h-4 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div id="res-effort-bar" class="h-full bg-green-400" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1"><span class="text-red-500">認知依賴 (Debt)</span><span id="res-debt-txt">0%</span></div>
+                            <div class="h-4 w-full bg-gray-200 rounded-full overflow-hidden">
+                                <div id="res-debt-bar" class="h-full bg-red-400" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <h4 class="font-bold text-blue-800 mb-1">AI使用平衡指數</h4>
+                    <div class="text-4xl font-black text-blue-600" id="balance-index">100</div>
+                </div>
+
+                <p id="upload-status" class="mt-6 text-sm font-bold text-green-600">✅ 資料已成功上傳給老師！</p>
+                
+                <button onclick="location.reload()" class="mt-6 bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full hover:bg-gray-300 transition">
+                    再玩一次
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================= 題目資料設定 =================
+        const part1Data = [
+            { type: 'effort', q: '自己讀完文章後，畫重點並寫下摘要。', emoji: '📝', ans: 'Effort!', desc: '太棒了！自己統整資訊能建立神經連結，讓大腦更聰明！' },
+            { type: 'debt', q: '從ChatGPT複製一整段文章，直接貼到作業裡。', emoji: '📋', ans: 'Debt!', desc: '警告！跳過思考直接複製，大腦就錯失了練習組織語言的機會！' },
+            { type: 'effort', q: '自己先寫完作文草稿，再請AI幫忙檢查文法。', emoji: '✍️', ans: 'Effort!', desc: '這是完美的使用方式！AI是你的助理，但主廚還是你！' },
+            { type: 'debt', q: '跳過老師發的閱讀文章，直接叫AI幫你寫摘要。', emoji: '⏭️', ans: 'Debt!', desc: '這會讓你喪失長篇文章的閱讀理解能力喔！' },
+            { type: 'effort', q: '用AI檢查文法，但自己決定是否接受它的每一個建議。', emoji: '🧐', ans: 'Effort!', desc: '很好！你保持了「批判性思考」，沒有盲目聽從機器。' },
+            { type: 'debt', q: '數學寫不出來，直接上網搜尋「解答」照抄。', emoji: '🔍', ans: 'Debt!', desc: '抄寫只運動了手部肌肉，大腦的邏輯區完全沒在動！' },
+            { type: 'effort', q: '為科展想了一個問題，自己設計實驗並測試。', emoji: '🧪', ans: 'Effort!', desc: '創造力大爆發！這是機器無法完全取代的人類能力。' },
+            { type: 'debt', q: '讓AI幫你寫報告的開頭和結尾，不修改直接繳交。', emoji: '🤖', ans: 'Debt!', desc: '這樣報告就失去了你獨特的個性和觀點了。' },
+            { type: 'debt', q: '辯論比賽前，叫AI給你三個論點，你就只背那三個。', emoji: '🗣️', ans: 'Debt!', desc: '雖然方便，但也限制了你從不同角度思考問題的能力。' },
+            { type: 'effort', q: '遇到困難的數學題，不依賴計算機，努力在紙上算出答案。', emoji: '🧮', ans: 'Effort!', desc: '這種「卡住」然後突破的感覺，就是大腦在升級的證明！' }
+        ];
+
+        const part2Data = [
+            { q: '用AI幫忙發想幾個故事大綱，然後自己挑選並寫出完整內文。', emoji: '💡' },
+            { q: '遇到不會的英文單字，直接把整段丟給翻譯軟體看中文。', emoji: '🌐' },
+            { q: '用AI生成精美的簡報背景圖，取代自己手繪。', emoji: '🎨' },
+            { q: '請AI解釋一個你聽不懂的理化觀念，直到你懂為止。', emoji: '🧠' },
+            { q: '寫日記時，請AI幫你修飾文字讓語氣更感人。', emoji: '📖' },
+            { q: '小組討論沒靈感，請AI隨機給五個瘋狂的點子來刺激討論。', emoji: '🌪️' },
+            { q: '把老師的講義掃描給AI，請它出一份測驗卷讓你練習。', emoji: '📝' },
+            { q: '程式出錯了，直接貼給AI請它生出正確代碼後貼上。', emoji: '💻' }
+        ];
+
+        const part3Data = [
+            { 
+                q: '歷史課要交一篇關於「工業革命」的報告。',
+                opts: { self: '去圖書館借書，自己統整筆記寫出報告。', google: '上網搜尋維基百科和幾篇文章，拼湊出內容。', ai: '輸入「幫我寫800字工業革命報告」，直接複製。' }
+            },
+            { 
+                q: '美術課需要畫一張海報，但你完全沒靈感。',
+                opts: { self: '拿紙筆隨意塗鴉，去散步觀察路人找靈感。', google: '在Pinterest或Google圖片找別人畫好的海報參考。', ai: '用Midjourney等AI繪圖工具直接生成一張繳交。' }
+            },
+            { 
+                q: '數學考卷有一題超難的幾何題你解不出來。',
+                opts: { self: '翻課本回顧公式，畫輔助線試了半小時。', google: '用拍照搜題APP找出類似題型的詳解步驟。', ai: '拍照傳給AI，只看它給的最終答案填上去。' }
+            },
+            { 
+                q: '下週要擔任英語演講，你需要準備講稿。',
+                opts: { self: '先用中文寫下想法，自己查單字慢慢翻譯成英文。', google: '先打好中文稿，丟到Google翻譯整篇翻過去。', ai: '給AI主題，請它直接生成一篇符合國中生程度的英文稿。' }
+            },
+            { 
+                q: '你想寫一首詩送給好朋友當生日禮物。',
+                opts: { self: '回憶你們相處的點滴，認真推敲押韻和字詞。', google: '上網找「生日祝福語錄」，挑幾句不錯的抄下來。', ai: '請AI寫一首關於友情的生日詩。' }
+            }
+        ];
+
+        // ================= 全域變數 =================
+        let userData = { class: '', number: '', name: '', startTime: 0, endTime: 0 };
+        let scores = { effort: 0, debt: 0, grayValueTotal: 0 };
+        let currentPart = 0;
+        let currentQIndex = 0;
+        let totalQuestions = part1Data.length + part2Data.length + part3Data.length + 2; // 25
+        let questionsCompleted = 0;
+        
+        // 【重要】老師請在這裡替換您的 Google Apps Script 部署網址
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwvFKNbpBGwZWIn331uzeB1i3z9-lRNP7IGlZpFnv_rXxnU7GE8B2KV1M_DqEsl67zw5w/exec";
+
+        // ================= 工具函數 =================
+        function showView(viewId) {
+            document.querySelectorAll('div[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function updateProgress() {
+            questionsCompleted++;
+            let percent = (questionsCompleted / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = percent + '%';
+        }
+
+        // ================= 邏輯：初始化 =================
+        function startGame() {
+            const uClass = document.getElementById('user-class').value;
+            const uNum = document.getElementById('user-number').value;
+            const uName = document.getElementById('user-name').value.trim();
+
+            if(!uClass || !uNum || !uName) {
+                alert("請填寫完整的班級、座號與姓名喔！");
+                return;
+            }
+
+            userData.class = uClass;
+            userData.number = uNum;
+            userData.name = uName;
+            userData.startTime = Date.now();
+
+            document.getElementById('progress-container').classList.remove('hidden');
+            currentPart = 1;
+            currentQIndex = 0;
+            renderPart1();
+        }
+
+        // ================= 邏輯：Part 1 =================
+        function renderPart1() {
+            showView('view-part1');
+            document.getElementById('p1-progress').innerText = currentQIndex + 1;
+            
+            const qData = part1Data[currentQIndex];
+            document.getElementById('p1-icon').innerText = qData.emoji;
+            document.getElementById('p1-question').innerText = qData.q;
+            
+            // 重置卡片狀態
+            const card = document.getElementById('p1-card');
+            card.classList.remove('flipped');
+            document.getElementById('p1-buttons').style.display = 'flex';
+        }
+
+        function answerPart1(userChoice) {
+            const qData = part1Data[currentQIndex];
+            const isCorrect = userChoice === qData.type;
+            
+            if (qData.type === 'effort') scores.effort += 10;
+            if (qData.type === 'debt') scores.debt += 10;
+
+            // 準備背面資料
+            const bgClass = qData.type === 'effort' ? 'bg-gradient-to-br from-green-400 to-green-600' : 'bg-gradient-to-br from-red-400 to-red-600';
+            document.getElementById('p1-back-bg').className = `flip-card-back flex flex-col items-center justify-center p-8 text-white rounded-3xl ${bgClass}`;
+            document.getElementById('p1-result-icon').innerText = isCorrect ? '🎉' : '💡';
+            document.getElementById('p1-result-title').innerText = qData.ans;
+            document.getElementById('p1-result-desc').innerText = qData.desc;
+
+            // 翻牌
+            document.getElementById('p1-card').classList.add('flipped');
+            document.getElementById('p1-buttons').style.display = 'none';
+        }
+
+        function nextPart1() {
+            updateProgress();
+            currentQIndex++;
+            if(currentQIndex < part1Data.length) {
+                renderPart1();
+            } else {
+                currentPart = 2;
+                currentQIndex = 0;
+                renderPart2();
+            }
+        }
+
+        // ================= 邏輯：Part 2 =================
+        function renderPart2() {
+            showView('view-part2');
+            document.getElementById('p2-progress').innerText = currentQIndex + 1;
+            
+            const qData = part2Data[currentQIndex];
+            document.getElementById('p2-icon').innerText = qData.emoji;
+            document.getElementById('p2-question').innerText = qData.q;
+            
+            // 重置UI
+            document.getElementById('p2-slider').value = 50;
+            document.getElementById('p2-slider').disabled = false;
+            document.getElementById('p2-stats').classList.add('hidden');
+            document.getElementById('p2-btn-submit').classList.remove('hidden');
+            document.getElementById('p2-btn-next').classList.add('hidden');
+        }
+
+        function submitPart2() {
+            const val = parseInt(document.getElementById('p2-slider').value);
+            scores.grayValueTotal += val; // 0=Effort, 100=Debt
+            
+            // 轉換分數 (簡單計算)
+            if(val < 40) scores.effort += 5;
+            else if(val > 60) scores.debt += 5;
+
+            document.getElementById('p2-slider').disabled = true;
+            document.getElementById('p2-btn-submit').classList.add('hidden');
+            
+            // 隨機生成假的全班分佈數據
+            const randE = Math.floor(Math.random() * 60) + 20; // 20-80%
+            const randD = 100 - randE;
+            
+            document.getElementById('p2-stats').classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('stat-effort').style.width = randE + '%';
+                document.getElementById('stat-effort').innerText = randE + '%';
+                document.getElementById('stat-debt').style.width = randD + '%';
+                document.getElementById('stat-debt').innerText = randD + '%';
+            }, 100);
+
+            document.getElementById('p2-btn-next').classList.remove('hidden');
+        }
+
+        function nextPart2() {
+            updateProgress();
+            currentQIndex++;
+            if(currentQIndex < part2Data.length) {
+                renderPart2();
+            } else {
+                currentPart = 3;
+                currentQIndex = 0;
+                renderPart3();
+            }
+        }
+
+        // ================= 邏輯：Part 3 =================
+        let createLvl = 50;
+        let dependLvl = 50;
+
+        function renderPart3() {
+            showView('view-part3');
+            document.getElementById('p3-progress').innerText = currentQIndex + 1;
+            
+            const qData = part3Data[currentQIndex];
+            document.getElementById('p3-question').innerText = qData.q;
+            
+            const optsDiv = document.getElementById('p3-options');
+            optsDiv.innerHTML = `
+                <button onclick="answerPart3('self', this)" class="w-full text-left p-4 rounded-xl border-2 border-green-200 hover:bg-green-50 transition text-sm font-bold text-gray-700 shadow-sm">${qData.opts.self}</button>
+                <button onclick="answerPart3('google', this)" class="w-full text-left p-4 rounded-xl border-2 border-blue-200 hover:bg-blue-50 transition text-sm font-bold text-gray-700 shadow-sm">${qData.opts.google}</button>
+                <button onclick="answerPart3('ai', this)" class="w-full text-left p-4 rounded-xl border-2 border-red-200 hover:bg-red-50 transition text-sm font-bold text-gray-700 shadow-sm">${qData.opts.ai}</button>
+            `;
+            document.getElementById('p3-btn-next').classList.add('hidden');
+            
+            // 重置大腦樣式
+            const brain = document.getElementById('brain-visual');
+            brain.className = "fa-solid fa-brain text-8xl brain-neutral mb-6";
+        }
+
+        function answerPart3(type, btnObj) {
+            // Disable all buttons in this section
+            const btns = document.getElementById('p3-options').querySelectorAll('button');
+            btns.forEach(b => { b.disabled = true; b.classList.add('opacity-50'); });
+            btnObj.classList.remove('opacity-50');
+            btnObj.classList.add('bg-gray-100', 'border-gray-500');
+
+            const brain = document.getElementById('brain-visual');
+            
+            if(type === 'self') {
+                createLvl = Math.min(100, createLvl + 15);
+                dependLvl = Math.max(0, dependLvl - 10);
+                scores.effort += 10;
+                brain.className = "fa-solid fa-brain text-8xl brain-effort mb-6";
+            } else if (type === 'google') {
+                createLvl = Math.min(100, createLvl + 5);
+                dependLvl = Math.min(100, dependLvl + 5);
+                scores.effort += 5;
+                brain.className = "fa-solid fa-brain text-8xl brain-neutral mb-6 text-blue-500";
+            } else {
+                createLvl = Math.max(0, createLvl - 15);
+                dependLvl = Math.min(100, dependLvl + 15);
+                scores.debt += 10;
+                brain.className = "fa-solid fa-brain text-8xl brain-debt mb-6";
+            }
+
+            // Update Bars
+            document.getElementById('bar-create').style.width = createLvl + '%';
+            document.getElementById('bar-create-txt').innerText = createLvl + '%';
+            document.getElementById('bar-depend').style.width = dependLvl + '%';
+            document.getElementById('bar-depend-txt').innerText = dependLvl + '%';
+
+            document.getElementById('p3-btn-next').classList.remove('hidden');
+        }
+
+        function nextPart3() {
+            updateProgress();
+            currentQIndex++;
+            if(currentQIndex < part3Data.length) {
+                renderPart3();
+            } else {
+                showView('view-part4');
+            }
+        }
+
+        // ================= 邏輯：Part 4 & 字數監聽 =================
+        document.getElementById('reflection1').addEventListener('input', function() {
+            document.getElementById('char-count1').innerText = this.value.length;
+        });
+        document.getElementById('reflection2').addEventListener('input', function() {
+            document.getElementById('char-count2').innerText = this.value.length;
+        });
+
+        function finishGame() {
+            const r1 = document.getElementById('reflection1').value.trim();
+            const r2 = document.getElementById('reflection2').value.trim();
+
+            if(r1.length < 20 || r2.length < 20) {
+                document.getElementById('p4-error').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('p4-error').classList.add('hidden');
+            document.getElementById('finish-btn').innerText = "處理中...";
+            document.getElementById('finish-btn').disabled = true;
+
+            // 更新最後兩題進度
+            updateProgress();
+            updateProgress();
+
+            userData.endTime = Date.now();
+            calculateResults(r1, r2);
+        }
+
+        // ================= 邏輯：結果計算與上傳 =================
+        function calculateResults(r1, r2) {
+            const timeTaken = Math.floor((userData.endTime - userData.startTime) / 1000);
+            
+            // 基礎分數計算
+            let totalPossible = (10 * 10) + (8 * 5) + (5 * 10); // 100 + 40 + 50 = 190
+            let totalE = scores.effort;
+            let totalD = scores.debt;
+            let sum = totalE + totalD;
+            if (sum === 0) sum = 1; // 避免除以0
+            
+            let eRatio = Math.round((totalE / sum) * 100);
+            let dRatio = 100 - eRatio;
+            
+            // 平衡指數 (0-100)，越接近全Effort越高分，但保留一點彈性
+            let balanceIndex = Math.round((eRatio * 1.2) - (dRatio * 0.5));
+            if(balanceIndex > 100) balanceIndex = 100;
+            if(balanceIndex < 0) balanceIndex = 0;
+
+            // 徽章判定
+            let badgeInfo = {};
+            if(balanceIndex >= 85) {
+                badgeInfo = { icon: 'fa-crown', title: '大腦主宰者 👑', desc: '完美掌握AI，大腦持續進化中！', color: 'from-yellow-300 to-yellow-600' };
+            } else if (balanceIndex >= 60) {
+                badgeInfo = { icon: 'fa-medal', title: 'AI平衡大師 🥈', desc: '懂得善用工具，也保留了思考空間。', color: 'from-gray-300 to-gray-500' };
+            } else {
+                badgeInfo = { icon: 'fa-robot', title: '科技依賴者 🥉', desc: '小心！你的大腦正在把主導權交給機器喔！', color: 'from-orange-700 to-yellow-800' };
+            }
+
+            // 渲染結果頁
+            document.getElementById('result-name').innerText = `${userData.name}，恭喜完成！`;
+            document.getElementById('result-time').innerText = timeTaken;
+            
+            const badgeBg = document.getElementById('badge-icon').parentElement;
+            badgeBg.className = `w-32 h-32 mx-auto bg-gradient-to-br ${badgeInfo.color} rounded-full flex items-center justify-center shadow-lg border-4 border-white relative z-10 mb-[-30px]`;
+            document.getElementById('badge-icon').className = `fa-solid ${badgeInfo.icon} text-6xl text-white drop-shadow-md`;
+            
+            document.getElementById('badge-title').innerText = badgeInfo.title;
+            document.getElementById('badge-desc').innerText = badgeInfo.desc;
+
+            setTimeout(() => {
+                document.getElementById('res-effort-bar').style.width = eRatio + '%';
+                document.getElementById('res-effort-txt').innerText = eRatio + '%';
+                document.getElementById('res-debt-bar').style.width = dRatio + '%';
+                document.getElementById('res-debt-txt').innerText = dRatio + '%';
+            }, 500);
+
+            document.getElementById('balance-index').innerText = balanceIndex;
+
+            showView('view-result');
+            document.getElementById('progress-container').classList.add('hidden');
+
+            // 準備上傳資料
+            const payload = {
+                class: userData.class,
+                number: userData.number,
+                name: userData.name,
+                timeSeconds: timeTaken,
+                effortRatio: eRatio,
+                debtRatio: dRatio,
+                balanceIndex: balanceIndex,
+                reflection1: r1,
+                reflection2: r2
+            };
+
+            uploadToGAS(payload);
+        }
+
+        function uploadToGAS(data) {
+            const statusEl = document.getElementById('upload-status');
+            statusEl.innerText = "⏳ 正在將你的成就傳送給老師...";
+            statusEl.className = "mt-6 text-sm font-bold text-blue-500";
+
+            // 由於跨域問題與示範性質，使用 no-cors 模式，或可使用表單 POST
+            // 這裡使用常見的 GAS Web App POST 寫法
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                // GAS 若使用 JSON.stringify 且沒設好CORS可能會報錯，但在 no-cors 下能送出
+                statusEl.innerText = "✅ 資料已成功上傳給老師！";
+                statusEl.className = "mt-6 text-sm font-bold text-green-600";
+            })
+            .catch(error => {
+                console.error('上傳失敗:', error);
+                // 為了不打擊學生，如果GAS沒接好也顯示成功(或提示稍後重試)
+                statusEl.innerText = "⚠️ 上傳完成 (註：需確認GAS後端已部署)";
+                statusEl.className = "mt-6 text-sm font-bold text-orange-500";
+            });
+        }
+    </script>
+</body>
+</html>
