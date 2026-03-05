@@ -321,19 +321,19 @@
     </div>
 
     <!-- ================= 教學簡報彈出視窗 (Modal) ================= -->
-    <div id="slides-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4 transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col h-[85vh] animate-modal relative">
-            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 px-6 flex justify-between items-center text-white shadow-md z-10">
-                <h3 class="font-bold text-xl"><i class="fa-solid fa-book-open mr-2"></i> Effort or Debt? 教學簡報</h3>
-                <button onclick="closeSlides()" class="text-white hover:text-pink-200 transition text-3xl font-black leading-none outline-none">&times;</button>
-            </div>
-            <!-- 將 Google Drive 連結轉換為 /preview 嵌入格式 -->
- <div class="fixed inset-0 bg-gray-100">
+    <div id="slides-modal" class="fixed inset-0 z-[100] hidden bg-black">
+
+    <button onclick="closeSlides()" 
+    class="absolute top-5 right-6 text-white text-4xl font-bold z-50">
+        ×
+    </button>
+
     <iframe 
-        src="https://btosichen.github.io/2026EffortorDebt-/ppt.html?t=timestamp"
+        src="https://btosichen.github.io/2026EffortorDebt-/ppt.html?t=1"
         class="w-full h-full border-0"
-        allow="autoplay"
-    ></iframe>
+        allow="autoplay">
+    </iframe>
+
 </div>
         </div>
     </div>
